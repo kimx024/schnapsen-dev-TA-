@@ -3,7 +3,7 @@ import random
 from typing import Optional
 
 import click
-from schnapsen.bots import MLDataBot, train_ML_model, MLPlayingBot, bully_bot
+from schnapsen.bots import MLDataBot, train_ML_model, MLPlayingBot
 
 from schnapsen.bots.example_bot import ExampleBot
 
@@ -13,6 +13,7 @@ from schnapsen.twenty_four_card_schnapsen import \
     TwentyFourSchnapsenGamePlayEngine
 
 from schnapsen.bots.rdeep import RdeepBot
+from schnapsen.bots.bully_bot import BullyBot
 
 
 @click.group()
@@ -37,7 +38,7 @@ class RandBot(Bot):
 @main.command()
 def random_game() -> None:
     engine = SchnapsenGamePlayEngine()
-    bot1 = RandBot(12112121)
+    bot1 = BullyBot()
     bot2 = RandBot(464566)
     for i in range(1000):
         winner_id, game_points, score = engine.play_game(bot1, bot2, random.Random(i))

@@ -100,7 +100,7 @@ class TrumpExchange(Move):
         return [self.jack]
 
     def __repr__(self) -> str:
-        return f"Trump_Exchange(jack={self.jack})"
+        return f"TrumpExchange(jack={self.jack})"
 
 
 @dataclass(frozen=True)
