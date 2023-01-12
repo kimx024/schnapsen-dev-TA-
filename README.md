@@ -17,8 +17,10 @@ pip install -e .
 To run the tests, run:
 
 ```sh
-pip install -e '.[test]'  # on Linux / MacOS
-pip install -e ".[test]"  # on Windows
+pip install -e '.[test]'  
+# on Linux / MacOS
+```
+```sh
 pytest ./tests
 ```
 
@@ -27,7 +29,7 @@ Then retry installing the dependencies.
 
 ## Running the CLI
 
-After intalling, you can try the provided command line interface examples.
+After installing, you can try the provided command line interface examples.
 Most examples are bots playing against each other; read the code for details.
 
 To run the CLI, run:
@@ -51,7 +53,7 @@ To start the GUI, run:
 python executables/server.py
 ```
 
-Now, open your webbrowser and type in the server address (i.e., http://127.0.0.1:8080). 
+Now, open your browser and type in the server address (i.e., http://127.0.0.1:8080). 
 By default, you are playing against RandBot. You can also play against other bots. Run 
 
 ```sh
@@ -87,7 +89,6 @@ If you install conda and create an environment, you can run python by just runni
 However, often your system also provides a python version. 
 To know which python is running, use
 ```sh
-which python    # on linux
 where python    # on windows (untested)
 ``` 
 Now, you want to look at the output and make sure that this executable is inside the anaconda folder and not where your system stores its executables.

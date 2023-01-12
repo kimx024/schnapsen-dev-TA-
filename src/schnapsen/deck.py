@@ -156,7 +156,7 @@ class OrderedCardCollection(CardCollection):
     def __init__(self, cards: Optional[Iterable[Card]] = None) -> None:
         """
         Create an ordered collection of cards. The cards are in the order as specified in the Iterable.
-        By default the Collection is empty.
+        By default, the Collection is empty.
         This constructor will make a defensive copy of the argument.
         """
         self._cards: List[Card] = list(cards or [])

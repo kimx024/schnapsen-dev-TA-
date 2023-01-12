@@ -9,21 +9,27 @@ import itertools
 
 class Bot(ABC):
     """
-    The Bot baseclass. Derive your own bots from this class and implement the get_move method to use it in games.
+    The Bot baseclass.
+    Derive your own bots from this class and implement
+    the get_move method to use it in games.
 
-    Besides the get_move method, it is also possible to override notify_trump_exchange and notify_game_end to get notified when these events happen.
+    Besides the get_move method, it is also possible to override notify_trump_exchange
+    and notify_game_end to get notified when these events happen.
     """
+
     @abstractmethod
     def get_move(self, state: 'PlayerPerspective', leader_move: Optional['Move']) -> 'Move':
         """
         Get the move this Bot wants to play.
-        If this Bot is leading, the leader_move will be None. If this both is following, the leader_move will contain the move the opponent just played
+        If this Bot is leading, the leader_move will be None.
+        If this both is following, the leader_move will contain the move the opponent just played
         """
         pass
 
-    def notify_trump_exchange(self, move: 'Trump_Exchange') -> None:
+    def notify_trump_exchange(self, move: 'TrumpExchange') -> None:
         """
-        Overide this method to get notified about trump exchanges. Note that this only notifies about the other bots exchanges.
+        Override this method to get notified about trump exchanges.
+        Note that this only notifies about the other bots exchanges.
 
         :param move: the Trump Exchange move that was played.
         """
@@ -41,10 +47,12 @@ class Bot(ABC):
 
 class Move(ABC):
     """
-    A single move during a game. There are several types of move possible: normal moves, trump exchanges, and marriages. They are implmented in classes inheriting from this class.
+    A single move during a game.
+    There are several types of move possible: normal moves, trump exchanges, and marriages.
+    They are implemented in classes inheriting from this class.
     """
 
-    cards: List[Card]  # implementation detail: The creation of this list is defered to the derived classes in _cards()
+    cards: List[Card]  # implementation detail: The creation of this list is deferred to the derived classes in _cards()
     """The cards played in this move"""
 
     def is_marriage(self) -> bool:
@@ -75,7 +83,7 @@ class Move(ABC):
 
 
 @dataclass(frozen=True)
-class Trump_Exchange(Move):
+class TrumpExchange(Move):
     """A move that implements the exchange of the trump card for a Jack of the same suit."""
 
     jack: Card
@@ -87,6 +95,7 @@ class Trump_Exchange(Move):
     def is_trump_exchange(self) -> bool:
         return True
 
+    # The card you have if you switched the Jack is not the Jack anymore
     def _cards(self) -> Iterable[Card]:
         return [self.jack]
 
@@ -119,10 +128,11 @@ class RegularMove(Move):
 @dataclass(frozen=True)
 class Marriage(Move):
     """
-    A Move representing a marriage in the game. This move has two cards, a king and a queen of the same suit.
+    A Move representing a marriage in the game.
+    This move has two cards, a king and a queen of the same suit.
     Right after the marriage is played, the player must play either the queen or the king.
     Because it can only be beneficial to play the queen, it is chosen automatically.
-    This Regular move is part of this Move already and does not have to be played separatly.
+    This Regular move is part of this Move already and does not have to be played separately.
     """
     queen_card: Card
     """The queen card of this marriage"""
@@ -141,9 +151,11 @@ class Marriage(Move):
         return True
 
     def as_regular_move(self) -> RegularMove:
-        # TODO this limits you to only have the queen to play after a marriage, while in general you would ahve a choice
+        # this limits you to only have the queen to play after a marriage,
+        # while in general you would have a choice
         return RegularMove(self.queen_card)
 
+    # returns the cards that have been stated
     def _cards(self) -> Iterable[Card]:
         return [self.queen_card, self.king_card]
 
@@ -152,26 +164,35 @@ class Marriage(Move):
 
 
 class Hand(CardCollection):
-    """Representing the cards in the hand of a player. These are the cards which the player can see and which he can play with in the turn."""
+    """
+    Representing the cards in the hand of a player.
+    These are the cards which the player can see and
+    which he can play with in the turn.
+    """
 
     def __init__(self, cards: Iterable[Card], max_size: int = 5) -> None:
         """
         Create a hand containing the cards.
 
         :param cards: The cards to be added to the hand
-        :param max_size: The maximum number of cards the hand can contain. If the number of cards goes beyond, an Exception is raised.
+        :param max_size: The maximum number of cards the hand can contain.
+        If the number of cards goes beyond, an Exception is raised.
         """
         self.max_size = max_size
         cards = list(cards)
-        assert len(cards) <= max_size, f"The number of cards {len(cards)} is larger than the maximum number fo allowed cards {max_size}"
+        assert len(
+            cards) <= max_size, f"The number of cards {len(cards)} is larger than " \
+                                f"the maximum number fo allowed cards {max_size} "
         self.cards = cards
 
     def remove(self, card: Card) -> None:
-        """Remove one occurence of the card from this hand"""
+        """Remove one occurrence of the card from this hand"""
         try:
             self.cards.remove(card)
         except ValueError:
-            raise Exception(f"Trying to remove a card from the hand which is not in the hand. Hand is {self.cards}, trying to remove {card}")
+            raise Exception(
+                f"Trying to remove a card from the hand which is not in the hand. "
+                f"Hand is {self.cards}, trying to remove {card}")
 
     def add(self, card: Card) -> None:
         """
@@ -201,7 +222,7 @@ class Hand(CardCollection):
 
     def is_empty(self) -> bool:
         """
-        Is the Hand emoty?
+        Is the Hand emote?
 
         :returns: A bool indicating whether the hand is empty
         """
@@ -229,15 +250,18 @@ class Talon(OrderedCardCollection):
         The cards of the Talon. The last card of the iterable is the bottommost card.
         The first one is the top card (which will be taken is a card is drawn)
         The Trump card is at the bottom of the Talon.
-        The trump_suit can also be specified explicitly, which is important when the Talon is empty.
-        If the trump_suit is specified and there are cards, then the suit of the bottommost card must be the same.
+        The trump_suit can also be specified explicitly,
+        which is important when the Talon is empty.
+        If the trump_suit is specified and there are cards,
+        then the suit of the bottommost card must be the same.
 
         :param cards: The cards to be put on this talon
         :param trump_suit: The trump suit of the Talon, important if there are no more cards to be taken.
         """
         if cards:
             trump_card_suit = list(cards)[-1].suit
-            assert not trump_suit or trump_card_suit == trump_suit, "If the trump suit is specified, and there are cards on the talon, the suit must be the same!"
+            assert not trump_suit or trump_card_suit == trump_suit, "If the trump suit is specified, and there are " \
+                                                                    "cards on the talon, the suit must be the same! "
             self.__trump_suit = trump_card_suit
         else:
             assert trump_suit
@@ -246,17 +270,21 @@ class Talon(OrderedCardCollection):
         super().__init__(cards)
 
     def copy(self) -> 'Talon':
-        # We do not need to make a copy of the cards as this happend in the constructor of Talon.
+        # We do not need to make a copy of the cards as this happened in the constructor of Talon.
         return Talon(self._cards, self.__trump_suit)
 
     def trump_exchange(self, new_trump: Card) -> Card:
         """
-        perfom a trump-jack exchange. The card to be put as the trump card must be a Jack of the same suit.
-        As a result, this Talon changed: the old trump is removed and the new_trump is at the bottom of the Talon
+        perform a trump-jack exchange.
+        The card to be put as the trump card must be a Jack of the same suit.
+        As a result, this Talon changed: the old trump is removed
+        and the new_trump is at the bottom of the Talon
 
-        We also require that there must be two cards on the Talon, which is always the case in a normal game of Schnapsen
+        We also require that there must be two cards on the Talon,
+        which is always the case in a normal game of Schnapsen
 
-        :param new_trump: The card to be put. It must be a Jack of the same suit as the card at the bottom
+        :param new_trump: The card to be put.
+        It must be a Jack of the same suit as the card at the bottom
 
         """
         assert new_trump.rank is Rank.JACK
@@ -267,20 +295,28 @@ class Talon(OrderedCardCollection):
         return old_trump
 
     def draw_cards(self, amount: int) -> Iterable[Card]:
-        """Draw a card from this Talon. This does not change the talon, btu rather returns a talon with the change applied and the card drawn"""
-        assert len(self._cards) >= amount, f"There are only {len(self._cards)} on the Talon, but {amount} cards are requested"
+        """
+        Draw a card from this Talon.
+        This does not change the talon,
+        but rather returns a talon with the change
+        applied and the card drawn
+        """
+        assert len(
+            self._cards) >= amount, f"There are only {len(self._cards)} on the Talon, but {amount} cards are requested"
         draw = self._cards[:amount]
         self._cards = self._cards[amount:]
         return draw
 
     def trump_suit(self) -> Suit:
-        """Return the suit of the trump card, i.e., the bottommost card.
+        """
+        Return the suit of the trump card, i.e., the bottommost card.
         This still works, even when the Talon has become empty.
         """
         return self.__trump_suit
 
     def trump_card(self) -> Optional[Card]:
-        """Returns the current trump card, i.e., the bottommost card.
+        """
+        Returns the current trump card, i.e., the bottommost card.
         Or None in case this Talon is empty
         """
         if len(self._cards) > 0:
@@ -295,11 +331,14 @@ class Talon(OrderedCardCollection):
 @dataclass(frozen=True)
 class Trick(ABC):
     """
-    A complete trick. This is, the move of the leader and if that was not an exchange, the move of the follower.
+    A complete trick.
+    This is, the move of the leader and if that was not an exchange,
+    the move of the follower.
     """
 
     cards: Iterable[Card] = field(init=False, repr=False, hash=False)
-    """All cards used as part of this trick. This includes cards used in marriages"""
+    """All cards used as part of this trick. 
+    This includes cards used in marriages"""
 
     @abstractmethod
     def is_trump_exchange(self) -> bool:
@@ -312,7 +351,8 @@ class Trick(ABC):
     @abstractmethod
     def as_partial(self) -> 'PartialTrick':
         """
-        Returns the first part of this trick. Raises an Exceptption if this is not a Trick with two parts
+        Returns the first part of this trick.
+        Raises an Exception if this is not a Trick with two parts
         """
 
     def __getattribute__(self, __name: str) -> Any:
@@ -328,7 +368,7 @@ class Trick(ABC):
 
 @dataclass(frozen=True)
 class ExchangeTrick(Trick):
-    exchange: Trump_Exchange
+    exchange: TrumpExchange
     """A trump exchange by the leading player"""
 
     trump_card: Card
@@ -351,6 +391,7 @@ class PartialTrick:
     """
     A partial trick is the move(s) played by the leading player.
     """
+
     leader_move: Union[RegularMove, Marriage]
     """The move played by the leader of the trick"""
 
@@ -385,8 +426,11 @@ class RegularTrick(Trick, PartialTrick):
 @dataclass(frozen=True)
 class Score:
     """
-    The score of one of the bots. This consists of the current points and potential pending points because of an earlier played marriage.
-    Note that the socre object is immutable and supports the `+` operator, so it can be used somewhat as a usual number.
+    The score of one of the bots.
+    This consists of the current points and
+    potential pending points because of an earlier played marriage.
+    Note that the score object is immutable and
+    supports the `+` operator, so it can be used somewhat as a usual number.
     """
     direct_points: int = 0
     """The current number of points"""
@@ -395,7 +439,8 @@ class Score:
 
     def __add__(self, other: 'Score') -> 'Score':
         """
-        Adds two scores together. Direct points and pending points are added separately.
+        Adds two scores together.
+        Direct points and pending points are added separately.
 
         :param other:  The score to be added to the current one.
         :returns: A new score object with the points of the current score and the other combined
@@ -408,7 +453,8 @@ class Score:
         """
         Redeem the pending points
 
-        :returns: A new score object with the pending points added to the direct points and the pending points set to zero.
+        :returns: A new score object with the pending points added
+        to the direct points and the pending points set to zero.
         """
         return Score(direct_points=self.direct_points + self.pending_points, pending_points=0)
 
@@ -418,7 +464,8 @@ class Score:
 
 class GamePhase(Enum):
     """
-    An indicator about the phase of the game. This is used because in Schnapsen, the rules change when the game enters the second phase.
+    An indicator about the phase of the game.
+    This is used because in Schnapsen, the rules change when the game enters the second phase.
     """
     ONE = 1
     TWO = 2
@@ -436,11 +483,16 @@ class BotState:
     def get_move(self, state: 'PlayerPerspective', leader_move: Optional[Move]) -> Move:
         """
         Gets the next move from the bot itself, passing it the state.
-        Does a quick check to make sure that the hand has the cards which are played. More advanced checks are performed outside of this call.
+        Does a quick check to make sure that the hand has the cards which are played.
+        More advanced checks are performed outside this call.
 
-        :param state: The PlayerGameState which contains the information on the current state of the game from the perspective of this player
+        :param state: the PlayerGameState which contains the information on the current state
+        of the game from the perspective of this player
+        :param leader_move: the move that the leader has made. This information is of course
+        public to the other player because a leader always plays first
         :returns: The move the both played
         """
+
         move = self.implementation.get_move(state, leader_move=leader_move)
         assert move is not None, f"The bot {self.implementation} returned a move which is None"
         if not isinstance(move, Move):
@@ -463,7 +515,7 @@ class BotState:
         return new_bot
 
     def __repr__(self) -> str:
-        return f"BotState(implementation={self.implementation}, hand={self.hand}, "\
+        return f"BotState(implementation={self.implementation}, hand={self.hand}, " \
                f"score={self.score}, won_cards={self.won_cards})"
 
 
@@ -477,7 +529,7 @@ class Previous:
     state: 'GameState'
     """The previous state of the game. """
     trick: Trick
-    """The trick which led to the current Gamestate from the Previous state"""
+    """The trick which led to the current GameState from the Previous state"""
     leader_remained_leader: bool
     """Did the leader of remain the leader."""
 
@@ -498,7 +550,8 @@ class GameState:
     talon: Talon
     """The talon, containing the cards not yet in the hand of the player and the trump card at the bottom"""
     previous: Optional[Previous]
-    """The events which led to this GameState, or None, if this is the initial GameState (or previous tricks and states are unknown)"""
+    """The events which led to this GameState, or None, if this is the initial GameState (or previous tricks and 
+    states are unknown) """
 
     def __getattribute__(self, __name: str) -> Any:
         if __name == "trump_suit":
@@ -508,10 +561,13 @@ class GameState:
 
     def copy_for_next(self) -> 'GameState':
         """
-        Make a copy of the gamestate, modified such that the previous state is this state, but the previous trick is not filled yet.
-        This is used to create a GameState which will be modified to become the next gamestate.
+        Make a copy of the GameSTate,
+        modified such that the previous state is this state,
+        but the previous trick is not filled yet.
+        This is used to create a GameState
+        which will be modified to become the next GameState.
         """
-        # We intentionally do no initialize the previous information. It is not known yet
+        # We intentionally do not initialize the previous information. It is not known yet
         new_state = GameState(
             leader=self.leader.copy(),
             follower=self.follower.copy(),
@@ -522,8 +578,12 @@ class GameState:
 
     def copy_with_other_bots(self, new_leader: Bot, new_follower: Bot) -> 'GameState':
         """
-        Make a copy of the gamestate, modified such that the bots are replaced by the provided ones.
+        Make a copy of the GameState, modified such that the bots are replaced by the provided ones.
         This is used to continue playing an existing GameState with different bots.
+
+        :param new_leader: check who is the leader in the new copy of the GameState
+        :param new_follower: check who is the follower in the new copy of the GameState.
+        :return GameState:
         """
         new_state = GameState(
             leader=self.leader.copy(),
@@ -538,7 +598,7 @@ class GameState:
     def game_phase(self) -> GamePhase:
         """What is the current phase of the game
 
-        :returns: GamePhase.ONE or GamePahse.TWO indicating the current phase
+        :returns: GamePhase.ONE or GamePhase.TWO indicating the current phase
         """
         if self.talon.is_empty():
             return GamePhase.TWO
@@ -546,23 +606,27 @@ class GameState:
             return GamePhase.ONE
 
     def are_all_cards_played(self) -> bool:
-        """Returns True in case the players have played all their cards and the game is has come to an end
+        """Returns True in case the players have played
+        all their cards and the game is has come to an end
 
-        :returns: Wheter all cards have been played
+        :returns: Whether all cards have been played
         """
         return self.leader.hand.is_empty() and self.follower.hand.is_empty() and self.talon.is_empty()
 
     def __repr__(self) -> str:
-        return f"GameState(leader={self.leader}, follower={self.follower}, "\
+        return f"GameState(leader={self.leader}, follower={self.follower}, " \
                f"talon={self.talon}, previous={self.previous})"
 
 
 class PlayerPerspective(ABC):
     """
-    The perspective a player has on the state of the game. This only gives access to the partially observable information.
-    The Bot gets passed an instance of this class when it gets requested a move by the GamePlayEngine
+    The perspective a player has on the state of the game.
+    This only gives access to the partially observable information.
+    The Bot gets passed an instance of this class
+    when it gets requested a move by the GamePlayEngine
 
-    This class has several convenience methods to get more information about the current state.
+    This class has several convenience methods
+    to get more information about the current state.
     """
 
     def __init__(self, state: 'GameState', engine: 'GamePlayEngine') -> None:
@@ -574,16 +638,19 @@ class PlayerPerspective(ABC):
         """
         Get a list of all valid moves the bot can play at this point in the game.
 
-        Design note: this could also return an Iterable[Move], but List[Move] was chosen to make the API easier to use.
+        Design note: this could also return an Iterable[Move],
+        but List[Move] was chosen to make the API easier to use.
         """
         pass
 
     def get_game_history(self) -> list[tuple['PlayerPerspective', Optional[Trick]]]:
         """
-        The game history from the perspective of the player. This means all the past PlayerPerspective this bot has seen, and the Tricks played.
-        This only provides access to cards the Bot is allowed to see.
+        The game history from the perspective of the player.
+        This means all the past PlayerPerspective this bot has seen, and the Tricks played.
+        This only provides access to cards that the Bot is allowed to see.
 
-        :returns: The PlayerPerspective and Tricks in chronological order, index 0 is the first round played. Only the last Trick will be None.
+        :returns: The PlayerPerspective and Tricks in chronological order,
+        index 0 is the first round played. Only the last Trick will be None.
         The last pair will contain the current PlayerGameState.
         """
 
@@ -610,7 +677,8 @@ class PlayerPerspective(ABC):
                 if current.trick.is_trump_exchange():
                     current_player_state = ExchangeFollowerPerspective(current.state, self.__engine)
                 else:
-                    current_player_state = FollowerPerspective(current.state, self.__engine, current.trick.as_partial().leader_move)
+                    current_player_state = FollowerPerspective(current.state, self.__engine,
+                                                               current.trick.as_partial().leader_move)
             history_record = (current_player_state, current.trick)
             game_state_history.insert(0, history_record)
 
@@ -624,12 +692,15 @@ class PlayerPerspective(ABC):
 
     @abstractmethod
     def get_my_score(self) -> Score:
-        """Get the socre of the current player. The return Score object contains both the direct points and pending points from a marriage."""
+        """Get the score of the current player.
+        The return Score object contains both the direct points and pending
+        points from a marriage. """
         pass
 
     @abstractmethod
     def get_opponent_score(self) -> Score:
-        """Get the socre of the other player. The return Score object contains both the direct points and pending points from a marriage."""
+        """Get the score of the other player.
+        The return Score object contains both the direct points and pending points from a marriage."""
         pass
 
     def get_trump_suit(self) -> Suit:
@@ -637,7 +708,8 @@ class PlayerPerspective(ABC):
         return self.__game_state.trump_suit
 
     def get_trump_card(self) -> Optional[Card]:
-        """Get the card which is at the bottom of the talon. Will be None if the talon is empty"""
+        """Get the card which is at the bottom of the talon.
+        Will be None if the talon is empty"""
         return self.__game_state.talon.trump_card()
 
     def get_talon_size(self) -> int:
@@ -645,35 +717,46 @@ class PlayerPerspective(ABC):
         return len(self.__game_state.talon)
 
     def get_phase(self) -> GamePhase:
-        """What is the pahse of the game? This returns a GamePhase object.
+        """What is the phase of the game? This returns a GamePhase object.
         You can check the phase by checking state.get_phase == GamePhase.ONE
         """
         return self.__game_state.game_phase()
 
     @abstractmethod
     def get_opponent_hand_in_phase_two(self) -> Hand:
-        """If the game is in the second phase, you can get the cards in the hand of the opponent.
-        If this gets called, but the second pahse has not started yet, this will throw en Exception
+        """
+        If the game is in the second phase, you can get the cards in the hand of the opponent.
+        If this gets called, but the second phase has not started yet, this will throw en Exception
         """
         pass
 
     @abstractmethod
     def am_i_leader(self) -> bool:
-        """Returns True if the bot is the leader of this trick, False if it is a follower."""
+        """
+        Returns True if the bot is the leader of this trick,
+        False if it is a follower.
+        """
         pass
 
     @abstractmethod
     def get_won_cards(self) -> CardCollection:
-        """Get a list of all cards this Bot has won until now."""
+        """
+        Get a list of all cards this Bot has won until now.
+        """
         pass
 
     @abstractmethod
     def get_opponent_won_cards(self) -> CardCollection:
-        """Get the list of cards the opponent has won until now."""
+        """
+        Get the list of cards the opponent has won until now.
+        """
         pass
 
     def __get_own_bot_state(self) -> BotState:
-        """Get the internal state object of this bot. This should not be used by a bot."""
+        """
+        Get the internal state object of this bot.
+        This should not be used by a bot.
+        """
         bot: BotState
         if self.am_i_leader():
             bot = self.__game_state.leader
@@ -682,7 +765,10 @@ class PlayerPerspective(ABC):
         return bot
 
     def __get_opponent_bot_state(self) -> BotState:
-        """Get the internal state object of the other bot. This should not be used by a bot."""
+        """
+        Get the internal state object of the other bot.
+        This should not be used by a bot.
+        """
         bot: BotState
         if self.am_i_leader():
             bot = self.__game_state.follower
@@ -691,9 +777,11 @@ class PlayerPerspective(ABC):
         return bot
 
     def seen_cards(self, leader_move: Optional[Move]) -> CardCollection:
-        """Get a list of all cards your bot has seen until now
+        """
+        Get a list of all cards your bot has seen until now
 
-        :param leader_move: The move made by the leader of the trick. These cards have also been seen until now.
+        :param leader_move: The move made by the leader of the trick.
+        These cards have also been seen until now.
         """
         bot = self.__get_own_bot_state()
 
@@ -707,7 +795,7 @@ class PlayerPerspective(ABC):
         if trump:
             seen_cards.add(trump)
 
-        # all cards which were played in Tricks (icludes marriages and Trump exchanges)
+        # all cards which were played in Tricks (includes marriages and Trump exchanges)
 
         seen_cards.update(self.__past_tricks_cards())
         if leader_move is not None:
@@ -724,8 +812,12 @@ class PlayerPerspective(ABC):
         return past_cards
 
     def get_known_cards_of_opponent_hand(self) -> CardCollection:
-        """Get all cards which are in the opponents hand, but known to your Bot. This includes cards earlier used in marriages, or a trump exchange.
-        All cards in the second pahse of the game."""
+        """
+        Get all cards which are in the opponents hand,
+        but known to your Bot.
+        This includes cards earlier used in marriages, or a trump exchange.
+        All cards in the second phase of the game.
+        """
         opponent_hand = self.__get_opponent_bot_state().hand
         if self.get_phase() == GamePhase.TWO:
             return opponent_hand
@@ -743,9 +835,12 @@ class PlayerPerspective(ABC):
 
     def get_state_in_phase_two(self) -> GameState:
         """
-        In phase TWO of the game, all information is known, so you can get the complete state
+        In phase TWO of the game,
+        all information is known, so you can get the complete state
 
-        This removes the real bots from the GameState. If you want to continue the game, provide new Bots. See copy_with_other_bots in the GameState class.
+        This removes the real bots from the GameState.
+        If you want to continue the game, provide new Bots.
+        See copy_with_other_bots in the GameState class.
         """
 
         if self.get_phase() == GamePhase.TWO:
@@ -755,21 +850,29 @@ class PlayerPerspective(ABC):
 
     def make_assumption(self, leader_move: Optional[Move], rand: Random) -> GameState:
         """
-        Takes the current imperfect information state and makes a random guess as to the position of the unknown cards.
-        This also takes into account cards seen earlier during marriages played by the opponent, as well as potential trump jack exchanges
+        Takes the current imperfect information state and
+        makes a random guess as to the position of the unknown cards.
+        This also takes into account cards seen earlier
+        during marriages played by the opponent, as well as potential trump jack exchanges
 
-        This removes the real bots from the GameState. If you want to continue the game, provide new Bots. See copy_with_other_bots in the GameState class.
+        This removes the real bots from the GameState.
+        If you want to continue the game, provide new Bots.
+        See copy_with_other_bots in the GameState class.
 
-        :param leader_move: the optional already executed leader_move in the current trick. This card is guaranteed to be in the hand of the leader in the returned GameState.
+        :param leader_move: the optional already executed
+        leader_move in the current trick.
+        This card is guaranteed to be in the hand of the leader in the returned GameState.
         :param rand: the source of random numbers to do the random assignment of unknown cards
 
-        :returns: A perfect information state object.
+        :returns: a "Perfect information" state object.
         """
         opponent_hand = self.__get_opponent_bot_state().hand.copy()
 
         if leader_move is not None:
             self.__game_state.leader.hand.get_cards()
-            assert all([card in opponent_hand for card in leader_move.cards]), f"The specified leader_move {leader_move} is not in the hand of the opponent {opponent_hand}"
+            assert all([card in opponent_hand for card in
+                        leader_move.cards]), f"The specified leader_move {leader_move} is not in the hand of the " \
+                                             f"opponent {opponent_hand} "
 
         full_state = self.__game_state.copy_with_other_bots(_DummyBot(), _DummyBot())
         if self.get_phase() == GamePhase.TWO:
@@ -787,7 +890,9 @@ class PlayerPerspective(ABC):
         unseen_cards = list(filter(lambda card: card not in seen_cards, full_deck))
         rand.shuffle(unseen_cards)
 
-        assert len(unseen_talon) + len(unseen_opponent_hand) == len(unseen_cards), "Logical error. The number of unseen cards in the opponents hand and in the talon must be equal to the number of unseen cards"
+        assert len(unseen_talon) + len(unseen_opponent_hand) == len(
+            unseen_cards), "Logical error. The number of unseen cards in the opponents hand and in the talon must be " \
+                           "equal to the number of unseen cards "
 
         new_talon = []
         for card in talon:
@@ -816,16 +921,27 @@ class PlayerPerspective(ABC):
 
 
 class _DummyBot(Bot):
-    """A bot used by PlayerPerspective.make_assumption to replace the real bots. This bot cannot play and will throw an Exception for everything"""
+    """
+    A bot used by PlayerPerspective.make_assumption to replace the real bots.
+    This bot cannot play and will throw
+    an Exception for everything
+    """
 
     def get_move(self, state: PlayerPerspective, leader_move: Optional[Move]) -> Move:
-        raise Exception("The GameState from make_assumption removes the real bots from the Game. If you want to continue the game, provide new Bots. See copy_with_other_bots in the GameState class.")
+        raise Exception(
+            "The GameState from make_assumption removes the real bots from the Game. "
+            "If you want to continue the "
+            "game, provide new Bots. See copy_with_other_bots in the GameState class.")
 
     def notify_game_end(self, won: bool, state: PlayerPerspective) -> None:
-        raise Exception("The GameState from make_assumption removes the real bots from the Game. If you want to continue the game, provide new Bots. See copy_with_other_bots in the GameState class.")
+        raise Exception(
+            "The GameState from make_assumption removes the real bots from the Game. \
+            If you want to continue the game, provide new Bots. See copy_with_other_bots in the GameState class.")
 
-    def notify_trump_exchange(self, move: Trump_Exchange) -> None:
-        raise Exception("The GameState from make_assumption removes the real bots from the Game. If you want to continue the game, provide new Bots. See copy_with_other_bots in the GameState class.")
+    def notify_trump_exchange(self, move: TrumpExchange) -> None:
+        raise Exception(
+            "The GameState from make_assumption removes the real bots from the Game. \
+             If you want to continue the game, provide new Bots. See copy_with_other_bots in the GameState class.")
 
 
 class LeaderPerspective(PlayerPerspective):
@@ -874,7 +990,8 @@ class FollowerPerspective(PlayerPerspective):
 
     def valid_moves(self) -> List[Move]:
         assert self.__partial_trick, "There is no partial trick for this follower, so no valid moves."
-        return list(self.__engine.move_validator.get_legal_follower_moves(self.__engine, self.__game_state, self.__partial_trick))
+        return list(self.__engine.move_validator.get_legal_follower_moves(self.__engine, self.__game_state,
+                                                                          self.__partial_trick))
 
     def get_hand(self) -> Hand:
         return self.__game_state.follower.hand.copy()
@@ -917,7 +1034,8 @@ class ExchangeFollowerPerspective(PlayerPerspective):
         """
         Get a list of all valid moves the bot can play at this point in the game.
 
-        Design note: this could also return an Iterable[Move], but List[Move] was chosen to make the API easier to use.
+        Design note: this could also return an Iterable[Move],
+        but List[Move] was chosen to make the API easier to use.
         """
         return []
 
@@ -948,7 +1066,9 @@ class ExchangeFollowerPerspective(PlayerPerspective):
 
 
 class WinnerPerspective(LeaderPerspective):
-    """The gamestate given to the winner of the game at the very end"""
+    """
+    The GameState given to the winner of the game at the very end
+    """
 
     def __init__(self, state: 'GameState', engine: 'GamePlayEngine') -> None:
         self.__game_state = state
@@ -963,7 +1083,9 @@ class WinnerPerspective(LeaderPerspective):
 
 
 class LoserPerspective(FollowerPerspective):
-    """The gamestate given to the loser of the game at the very end"""
+    """
+    The GameState given to the loser of the game at the very end
+    """
 
     def __init__(self, state: 'GameState', engine: 'GamePlayEngine') -> None:
         self.__game_state = state
@@ -978,11 +1100,11 @@ class LoserPerspective(FollowerPerspective):
 
 
 class DeckGenerator(ABC):
-    @ abstractmethod
+    @abstractmethod
     def get_initial_deck(self) -> OrderedCardCollection:
         pass
 
-    @ classmethod
+    @classmethod
     def shuffle_deck(self, deck: OrderedCardCollection, rng: Random) -> OrderedCardCollection:
         the_cards = list(deck.get_cards())
         rng.shuffle(the_cards)
@@ -991,7 +1113,7 @@ class DeckGenerator(ABC):
 
 class SchnapsenDeckGenerator(DeckGenerator):
 
-    @ classmethod
+    @classmethod
     def get_initial_deck(self) -> OrderedCardCollection:
         deck = OrderedCardCollection()
         for suit in Suit:
@@ -1001,13 +1123,13 @@ class SchnapsenDeckGenerator(DeckGenerator):
 
 
 class HandGenerator(ABC):
-    @ abstractmethod
+    @abstractmethod
     def generateHands(self, cards: OrderedCardCollection) -> Tuple[Hand, Hand, Talon]:
         pass
 
 
 class SchnapsenHandGenerator(HandGenerator):
-    @ classmethod
+    @classmethod
     def generateHands(self, cards: OrderedCardCollection) -> Tuple[Hand, Hand, Talon]:
         the_cards = list(cards.get_cards())
         hand1 = Hand([the_cards[i] for i in range(0, 10, 2)], max_size=5)
@@ -1017,11 +1139,11 @@ class SchnapsenHandGenerator(HandGenerator):
 
 
 class TrickImplementer(ABC):
-    @ abstractmethod
+    @abstractmethod
     def play_trick(self, game_engine: 'GamePlayEngine', game_state: GameState) -> GameState:
         pass
 
-    @ abstractmethod
+    @abstractmethod
     def play_trick_with_fixed_leader_move(self, game_engine: 'GamePlayEngine', game_state: GameState,
                                           leader_move: Move) -> GameState:
         pass
@@ -1031,13 +1153,14 @@ class SchnapsenTrickImplementer(TrickImplementer):
 
     def play_trick(self, game_engine: 'GamePlayEngine', game_state: GameState) -> GameState:
         leader_move = self.get_leader_move(game_engine, game_state)
-        return self.play_trick_with_fixed_leader_move(game_engine=game_engine, game_state=game_state, leader_move=leader_move)
+        return self.play_trick_with_fixed_leader_move(game_engine=game_engine, game_state=game_state,
+                                                      leader_move=leader_move)
 
     def play_trick_with_fixed_leader_move(self, game_engine: 'GamePlayEngine', game_state: GameState,
                                           leader_move: Move) -> GameState:
         if leader_move.is_trump_exchange():
             next_game_state = game_state.copy_for_next()
-            exchange = cast(Trump_Exchange, leader_move)
+            exchange = cast(TrumpExchange, leader_move)
             old_trump_card = game_state.talon.trump_card()
             assert old_trump_card
             self.play_trump_exchange(next_game_state, exchange)
@@ -1053,7 +1176,8 @@ class SchnapsenTrickImplementer(TrickImplementer):
         trick = RegularTrick(leader_move=partial_trick, follower_move=follower_move)
         return self._apply_regular_trick(game_engine=game_engine, game_state=game_state, trick=trick)
 
-    def _apply_regular_trick(self, game_engine: 'GamePlayEngine', game_state: GameState, trick: RegularTrick) -> GameState:
+    def _apply_regular_trick(self, game_engine: 'GamePlayEngine', game_state: GameState,
+                             trick: RegularTrick) -> GameState:
 
         # apply the trick to the next_game_state
         # The next game state will be modified during this trick. We start from the previous state
@@ -1071,7 +1195,10 @@ class SchnapsenTrickImplementer(TrickImplementer):
         next_game_state.follower.hand.remove(trick.follower_move.card)
 
         # We set the leader for the next state based on what the scorer decides
-        next_game_state.leader, next_game_state.follower, leader_remained_leader = game_engine.trick_scorer.score(trick, next_game_state.leader, next_game_state.follower, next_game_state.trump_suit)
+        next_game_state.leader, next_game_state.follower, \
+        leader_remained_leader = game_engine.trick_scorer.score(trick, next_game_state.leader,
+                                                                next_game_state.follower,
+                                                                next_game_state.trump_suit)
 
         # important: the winner takes the first card of the talon, the loser the second one.
         # this also ensures that the loser of the last trick of the first phase gets the face up trump
@@ -1085,7 +1212,7 @@ class SchnapsenTrickImplementer(TrickImplementer):
         return next_game_state
 
     def get_leader_move(self, game_engine: 'GamePlayEngine', game_state: 'GameState') -> Move:
-        # ask first players move trough the requester
+        # ask first players move through the requester
         leader_game_state = LeaderPerspective(game_state, game_engine)
         leader_move = game_engine.move_requester.get_move(game_state.leader, leader_game_state, None)
         if not game_engine.move_validator.is_legal_leader_move(game_engine, game_state, leader_move):
@@ -1093,10 +1220,10 @@ class SchnapsenTrickImplementer(TrickImplementer):
 
         return leader_move
 
-    def play_trump_exchange(self, game_state: GameState, trump_exchange: Trump_Exchange) -> None:
+    def play_trump_exchange(self, game_state: GameState, trump_exchange: TrumpExchange) -> None:
         assert trump_exchange.jack.suit is game_state.trump_suit, \
             f"A trump exchange can only be done with a Jack of the same suit as the current trump. Got a {trump_exchange.jack} while the  Trump card is a {game_state.trump_suit}"
-        # apply the changes in the gamestate
+        # apply the changes in the GameState
         game_state.leader.hand.remove(trump_exchange.jack)
         old_trump = game_state.talon.trump_exchange(trump_exchange.jack)
         game_state.leader.hand.add(old_trump)
@@ -1107,26 +1234,30 @@ class SchnapsenTrickImplementer(TrickImplementer):
         score = game_engine.trick_scorer.marriage(marriage_move, game_state)
         game_state.leader.score += score
 
-    def get_follower_move(self, game_engine: 'GamePlayEngine', game_state: 'GameState', partial_trick: Move) -> RegularMove:
+    def get_follower_move(self, game_engine: 'GamePlayEngine', game_state: 'GameState',
+                          partial_trick: Move) -> RegularMove:
         follower_game_state = FollowerPerspective(game_state, game_engine, partial_trick)
 
         follower_move = game_engine.move_requester.get_move(game_state.follower, follower_game_state, partial_trick)
-        if follower_move not in game_engine.move_validator.get_legal_follower_moves(game_engine, game_state, partial_trick):
+        if follower_move not in game_engine.move_validator.get_legal_follower_moves(game_engine, game_state,
+                                                                                    partial_trick):
             raise Exception(f"Follower {game_state.follower.implementation} played an illegal move")
         return cast(RegularMove, follower_move)
 
 
 class MoveRequester:
-    """An the logic of requesting a move from a bot.
-    This logic also determines what happens in case the bot is to slow, throws an exception during operation, etc"""
+    """
+    The logic of requesting a move from a bot.
+    This logic also determines what happens in case
+    the bot is too slow, throws an exception during operation, etc
+    """
 
-    @ abstractmethod
+    @abstractmethod
     def get_move(self, bot: BotState, state: PlayerPerspective, leader_move: Optional[Move]) -> Move:
         pass
 
 
 class SimpleMoveRequester(MoveRequester):
-
     """The simplest just asks the move"""
 
     def get_move(self, bot: BotState, state: PlayerPerspective, leader_move: Optional[Move]) -> Move:
@@ -1134,12 +1265,13 @@ class SimpleMoveRequester(MoveRequester):
 
 
 class MoveValidator(ABC):
-    @ abstractmethod
+    @abstractmethod
     def get_legal_leader_moves(self, game_engine: 'GamePlayEngine', game_state: GameState) -> Iterable[Move]:
         pass
 
-    @ abstractmethod
-    def get_legal_follower_moves(self, game_engine: 'GamePlayEngine', game_state: GameState, partial_trick: Move) -> Iterable[Move]:
+    @abstractmethod
+    def get_legal_follower_moves(self, game_engine: 'GamePlayEngine', game_state: GameState, partial_trick: Move) -> \
+            Iterable[Move]:
         pass
 
     def is_legal_leader_move(self, game_engine: 'GamePlayEngine', game_state: GameState, move: Move) -> bool:
@@ -1156,8 +1288,8 @@ class SchnapsenMoveValidator(MoveValidator):
         if not game_state.talon.is_empty():
             trump_jack = Card.get_card(Rank.JACK, game_state.trump_suit)
             if trump_jack in cards_in_hand:
-                valid_moves.append(Trump_Exchange(trump_jack))
-        # mariages
+                valid_moves.append(TrumpExchange(trump_jack))
+        # marriages
         for card in cards_in_hand.filter_rank(Rank.QUEEN):
             king_card = Card.get_card(Rank.KING, card.suit)
             if king_card in cards_in_hand:
@@ -1173,13 +1305,14 @@ class SchnapsenMoveValidator(MoveValidator):
         if move.is_trump_exchange():
             if game_state.talon.is_empty():
                 return False
-            trump_move: Trump_Exchange = cast(Trump_Exchange, move)
+            trump_move: TrumpExchange = cast(TrumpExchange, move)
             return trump_move.jack in cards_in_hand
         # it has to be a regular move
         regular_move = cast(RegularMove, move)
         return regular_move.card in cards_in_hand
 
-    def get_legal_follower_moves(self, game_engine: 'GamePlayEngine', game_state: GameState, partial_trick: Move) -> Iterable[Move]:
+    def get_legal_follower_moves(self, game_engine: 'GamePlayEngine', game_state: GameState, partial_trick: Move) -> \
+            Iterable[Move]:
         hand = game_state.follower.hand
         if partial_trick.is_marriage():
             leader_card = cast(Marriage, partial_trick).queen_card
@@ -1202,24 +1335,28 @@ class SchnapsenMoveValidator(MoveValidator):
             #     if you have no trumps at all you may play anything.
             # ## implemented version, realizing that the rules for trump are overlapping with the normal case ##
             # you must play a higher card of the same suit if you can
-            # failing this, you must play a lower card of the same suit;
-            # --new--> failing this, if the opponen did not play a trump, you must play a trump
+            # fail this, you must play a lower card of the same suit;
+            # --new--> failing this, if the opponent did not play a trump, you must play a trump
             # failing this, you can play anything
+
             leader_card_score = game_engine.trick_scorer.rank_to_points(leader_card.rank)
             # you must play a higher card of the same suit if you can;
             same_suit_cards = hand.filter_suit(leader_card.suit)
             if same_suit_cards:
                 higher_same_suit, lower_same_suit = [], []
                 for card in same_suit_cards:
-                    # TODO this is slightly ambigousm should this be >= ??
-                    higher_same_suit.append(card) if game_engine.trick_scorer.rank_to_points(card.rank) > leader_card_score else lower_same_suit.append(card)
+                    # TODO this is slightly ambiguous should this be >= ??
+                    higher_same_suit.append(card) if game_engine.trick_scorer.rank_to_points(
+                        card.rank) > leader_card_score else lower_same_suit.append(card)
                 if higher_same_suit:
                     return RegularMove.from_cards(higher_same_suit)
-            # failing this, you must play a lower card of the same suit;
+                # failing this, you must play a lower card of the same suit;
                 elif lower_same_suit:
                     return RegularMove.from_cards(lower_same_suit)
-                raise AssertionError("Somethign is wrong in the logic here. There should be cards, but they are neither placed in the low, nor higher list")
-            # failing this, if the opponen did not play a trump, you must play a trump
+                raise AssertionError(
+                    "Something is wrong in the logic here. There should be cards, but they are neither placed in the "
+                    "low, nor higher list")
+                # failing this, if the opponent did not play a trump, you must play a trump
             trump_cards = hand.filter_suit(game_state.trump_suit)
             if leader_card.suit != game_state.trump_suit and trump_cards:
                 return RegularMove.from_cards(trump_cards)
@@ -1228,31 +1365,35 @@ class SchnapsenMoveValidator(MoveValidator):
 
 
 class TrickScorer(ABC):
-    @ abstractmethod
-    def score(self, trick: RegularTrick, leader: BotState, follower: BotState, trump: Suit) -> Tuple[BotState, BotState, bool]:
+    @abstractmethod
+    def score(self, trick: RegularTrick, leader: BotState, follower: BotState, trump: Suit) -> Tuple[BotState, BotState,
+                                                                                                     bool]:
         """
-        Score the trick for the given leader and follower. The returned bots are copies and have the score of the trick applied.
-        They are returned in order (new_leader, new_follower). If appropriate, also pending points have been applied.
+        Score the trick for the given leader and follower.
+        The returned bots are copies and have the score of the trick applied.
+        They are returned in order (new_leader, new_follower).
+        If appropriate, also pending points have been applied.
         The boolean is True if the leading bot remained the same, i.e., the past leader remains the leader
         """
         pass
 
-    @ abstractmethod
+    @abstractmethod
     def declare_winner(self, game_state: GameState) -> Optional[Tuple[BotState, int]]:
-        """return a bot and the number of points if there is a winner of this game already"""
+        """
+        return a bot and the number of points if there is a winner of this game already
+        """
         pass
 
-    @ abstractmethod
+    @abstractmethod
     def rank_to_points(self, rank: Rank) -> int:
         pass
 
-    @ abstractmethod
+    @abstractmethod
     def marriage(self, move: Marriage, gamestate: GameState) -> 'Score':
         pass
 
 
 class SchnapsenTrickScorer(TrickScorer):
-
     SCORES = {
         Rank.ACE: 11,
         Rank.TEN: 10,
@@ -1272,7 +1413,8 @@ class SchnapsenTrickScorer(TrickScorer):
             # any other marriage
             return Score(pending_points=20)
 
-    def score(self, trick: RegularTrick, leader: BotState, follower: BotState, trump: Suit) -> Tuple[BotState, BotState, bool]:
+    def score(self, trick: RegularTrick, leader: BotState, follower: BotState, trump: Suit) -> Tuple[
+        BotState, BotState, bool]:
 
         if trick.leader_move.is_marriage():
             regular_leader_move: RegularMove = cast(Marriage, trick.leader_move).as_regular_move()
@@ -1312,16 +1454,21 @@ class SchnapsenTrickScorer(TrickScorer):
 
     def declare_winner(self, game_state: GameState) -> Optional[Tuple[BotState, int]]:
         """
-        Declaring a winner uses the logic from https://www.pagat.com/marriage/schnaps.html#marriages , but simplified, because we do not have closing of the Talon and no need to guess the scores.
+        Declaring a winner uses the logic from
+        https://www.pagat.com/marriage/schnaps.html#marriages ,
+        but simplified, because we do not have closing of the Talon and no need to guess the scores.
         The following text adapted accordingly from that website.
 
         If a player has 66 or more points, she scores points toward game as follows:
 
             * one game point, if the opponent has made at least 33 points;
-            * two game points, if the opponent has made fewer than 33 points, but has won at least one trick (opponent is said to be Schneider);
+            * two game points, if the opponent has made fewer than 33 points,
+             but has won at least one trick (opponent is said to be Schneider);
             * three game points, if the opponent has won no tricks (opponent is said to be Schwarz).
 
-        If play continued to the very last trick with the talon exhausted, the player who takes the last trick wins the hand, scoring one game point, irrespective of the number of card points the players have taken.
+        If play continued to the very last trick with the talon exhausted,
+        the player who takes the last trick wins the hand,
+        scoring one game point, irrespective of the number of card points the players have taken.
         """
         if game_state.leader.score.direct_points >= 66:
             follower_score = game_state.follower.score.direct_points
@@ -1330,18 +1477,19 @@ class SchnapsenTrickScorer(TrickScorer):
             elif follower_score >= 33:
                 return game_state.leader, 1
             else:
-                # second case in explaination above, 0 < score < 33
+                # second case in explanation above, 0 < score < 33
                 assert follower_score < 66
                 return game_state.leader, 2
         elif game_state.follower.score.direct_points >= 66:
-            raise AssertionError("Would declare the follower winner, but this should never happen in the current implementation")
+            raise AssertionError(
+                "Would declare the follower winner, but this should never happen in the current implementation")
         elif game_state.are_all_cards_played():
             return game_state.leader, 1
         else:
             return None
 
 
-@ dataclass
+@dataclass
 class GamePlayEngine:
     deck_generator: DeckGenerator
     hand_generator: HandGenerator
@@ -1354,11 +1502,14 @@ class GamePlayEngine:
         """
         Play a game between bot1 and bot2, using the rng to create the game.
 
-        :param bot1: The first bot playing the game. This bot will be the leader for the first trick.
-        :param bot2: The second bot playing the game. This bot will be the follower for the first trick.
+        :param bot1: The first bot playing the game.
+        This bot will be the leader for the first trick.
+        :param bot2: The second bot playing the game.
+        This bot will be the follower for the first trick.
         :param rng: The random number generator used to shuffle the deck.
 
-        :returns: A tuple with the bot which won the game, the number of points obtained from this game and the score attained.
+        :returns: A tuple with the bot which won the game,
+        the number of points obtained from this game and the score attained.
         """
         cards = self.deck_generator.get_initial_deck()
         shuffled = self.deck_generator.shuffle_deck(cards, rng)
@@ -1376,18 +1527,20 @@ class GamePlayEngine:
         winner, points, score = self.play_game_from_state(game_state=game_state, leader_move=None)
         return winner, points, score
 
-    def play_game_from_state_with_new_bots(self, game_state: GameState, new_leader: Bot, new_follower: Bot, leader_move: Optional[Move]) -> Tuple[Bot, int, Score]:
+    def play_game_from_state_with_new_bots(self, game_state: GameState, new_leader: Bot, new_follower: Bot,
+                                           leader_move: Optional[Move]) -> Tuple[Bot, int, Score]:
         """
         Continue a game  which might have started before with other bots, with new bots.
         The new bots are new_leader and new_follower.
-        The leader move is an optional paramter which can be provided to force this first move from the leader.
+        The leader move is an optional parameter which can be provided to force this first move from the leader.
 
         :param game_state: The state of the game to start from
         :param new_leader: The bot which will take the leader role in the game.
         :param new_follower: The bot which will take the follower in the game.
         :param leader_move: if provided, the leader will be forced to play this move as its first move.
 
-        :returns: A tuple with the bot which won the game, the number of points obtained from this game and the score attained.
+        :returns: A tuple with the bot which won the game,
+        the number of points obtained from this game and the score attained.
         """
 
         game_state_copy = game_state.copy_with_other_bots(new_leader=new_leader, new_follower=new_follower)
@@ -1396,19 +1549,22 @@ class GamePlayEngine:
     def play_game_from_state(self, game_state: GameState, leader_move: Optional[Move]) -> Tuple[Bot, int, Score]:
         """
         Continue a game  which might have been started before.
-        The leader move is an optional paramter which can be provided to force this first move from the leader.
+        The leader move is an optional parameter which can be provided to force this first move from the leader.
 
         :param game_state: The state of the game to start from
         :param leader_move: if provided, the leader will be forced to play this move as its first move.
 
-        :returns: A tuple with the bot which won the game, the number of points obtained from this game and the score attained.
+        :returns: A tuple with the bot which won the game,
+        the number of points obtained from this game and the score attained.
         """
         winner: Optional[BotState] = None
         points: int = -1
         while not winner:
             if leader_move is not None:
-                # we continues from a game where the leading bot already did a move, we immitate that
-                game_state = self.trick_implementer.play_trick_with_fixed_leader_move(game_engine=self, game_state=game_state, leader_move=leader_move)
+                # we continue from a game where the leading bot already did a move, we imitate that
+                game_state = self.trick_implementer.play_trick_with_fixed_leader_move(game_engine=self,
+                                                                                      game_state=game_state,
+                                                                                      leader_move=leader_move)
                 leader_move = None
             else:
                 game_state = self.trick_implementer.play_trick(self, game_state)
@@ -1422,9 +1578,11 @@ class GamePlayEngine:
 
         return winner.implementation, points, winner.score
 
-    def play_at_most_n_tricks(self, game_state: GameState, new_leader: Bot, new_follower: Bot, n: int) -> Tuple[GameState, int]:
+    def play_at_most_n_tricks(self, game_state: GameState, new_leader: Bot, new_follower: Bot, n: int) -> Tuple[
+        GameState, int]:
         """
-        Plays up to n tricks (including the one started by the leader, if provided) on a game which might have started before.
+        Plays up to n tricks (including the one started by the leader,
+        if provided) on a game which might have started before.
         The number of tricks will be smaller than n in case the game ends before n tricks are played.
         The new bots are new_leader and new_follower.
 
@@ -1457,11 +1615,11 @@ class GamePlayEngine:
         return game_state_copy, rounds_played
 
     def __repr__(self) -> str:
-        return f"GamePlayEngine(deck_generator={self.deck_generator}, "\
-               f"hand_generator={self.hand_generator}, "\
-               f"trick_implementer={self.trick_implementer}, "\
-               f"move_requester={self.move_requester}, "\
-               f"move_validator={self.move_validator}, "\
+        return f"GamePlayEngine(deck_generator={self.deck_generator}, " \
+               f"hand_generator={self.hand_generator}, " \
+               f"trick_implementer={self.trick_implementer}, " \
+               f"move_requester={self.move_requester}, " \
+               f"move_validator={self.move_validator}, " \
                f"trick_scorer={self.trick_scorer})"
 
 
