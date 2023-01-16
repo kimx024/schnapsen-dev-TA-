@@ -393,9 +393,10 @@ def get_state_feature_vector(state: PlayerPerspective) -> List[int]:
     won_cards = state.get_won_cards().get_cards()
     opponent_won_cards = state.get_opponent_won_cards().get_cards()
     opponent_known_cards = state.get_known_cards_of_opponent_hand().get_cards()
-    # each card can either be i) on player's hand, ii) on player's won cards, iii) on opponent's hand, iv) on opponent's won cards
-    # v) be the trump card or vi) in an unknown position -> either on the talon or on the opponent's hand
-    # There are all different cases regarding card's knowledge, and we represent these 6 cases using one hot encoding vectors as seen bellow.
+    # each card can either be i) on player's hand, ii) on player's won cards, iii) on opponent's hand,
+    # iv) on opponent's won cards v) be the trump card or vi) in an unknown position -> either on the talon or on the
+    # opponent's hand There are all different cases regarding card's knowledge, and we represent these 6 cases using
+    # one hot encoding vectors as seen bellow.
 
     deck_knowledge_in_consecutive_one_hot_encodings: list[int] = []
 
@@ -416,7 +417,8 @@ def get_state_feature_vector(state: PlayerPerspective) -> List[int]:
         # v) be the trump card
         elif card == trump_card:
             card_knowledge_in_one_hot_encoding = [0, 1, 0, 0, 0, 0]
-        # vi) in an unknown position as it is invisible to this player. Thus, it is either on the talon or on the opponent's hand
+        # vi) in an unknown position as it is invisible to this player. Thus, it is either on the talon or on the
+        # opponent's hand
         else:
             card_knowledge_in_one_hot_encoding = [1, 0, 0, 0, 0, 0]
         # This list eventually develops to one long 1-dimensional numpy array of shape (120,)

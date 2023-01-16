@@ -9,7 +9,7 @@ from schnapsen.bots import MLDataBot, train_ML_model, MLPlayingBot, RandBot
 from schnapsen.bots.example_bot import ExampleBot
 
 from schnapsen.game import (Bot, Move, PlayerPerspective,
-                            SchnapsenGamePlayEngine, TrumpExchange)
+                            SchnapsenGamePlayEngine, Trump_Exchange)
 from schnapsen.twenty_four_card_schnapsen import \
     TwentyFourSchnapsenGamePlayEngine
 
@@ -61,7 +61,7 @@ class NotificationExampleBot(Bot):
         print(f'result {"win" if won else "lost"}')
         print(f'I still have {len(state.get_hand())} cards left')
 
-    def notify_trump_exchange(self, move: TrumpExchange) -> None:
+    def notify_trump_exchange(self, move: Trump_Exchange) -> None:
         print(f"That trump exchanged! {move.jack}")
 
 
