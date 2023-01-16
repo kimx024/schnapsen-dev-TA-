@@ -50,9 +50,8 @@ class SchnapsenServer:
             print("Closing the server, because an Exception was raised")
             # by returning False, we indicate that the exception was not handled.
             return False
-        else:
-            print("Server closed")
-            return True
+        print("Server closed")
+        return True
 
     def __init__(self, host_name: str = "0.0.0.0", port: int = 8080) -> None:
         """Creates and starts the schnapsen server"""
@@ -198,7 +197,14 @@ class _Old_GUI_Compatibility:
         opponent_known_cards = state.get_known_cards_of_opponent_hand()
 
         partial_move_cards = leader_move.cards if leader_move else []
-        partial_move_down = leader_move.as_regular_move().card if leader_move else None
+        if leader_move:
+            if leader_move.is_regular_move():
+                partial_move_down = leader_move.as_regular_move().card
+            else:
+                assert leader_move.is_marriage()
+                partial_move_down = leader_move.as_marriage().underlying_regular_move().card
+        else:
+            partial_move_down = None
 
         card_state: list[str] = ["None"] * 20
         p1_perspective: list[str] = ["None"] * 20
