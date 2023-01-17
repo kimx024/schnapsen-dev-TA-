@@ -34,9 +34,10 @@ class BullyBot(Bot):
             random_trump_suit_move = random.choice(trump_suit_moves)
             return random_trump_suit_move
 
-        # Else, if you are the follower and
+        # Else, if you are the follower, and
         # you have cards of the same suit as the opponent, play one of these at random.
         if not player_perspective.am_i_leader():
+            assert leader_move is not None
             leader_suit: Suit = leader_move.cards[0].suit
             leaders_suit_moves: list[Move] = []
 
@@ -54,11 +55,11 @@ class BullyBot(Bot):
                 return random_leader_suit_move
 
         # Else, play one of your cards with the highest rank
-
         # get the list of cards in my hand
         my_hand_cards: list[Card] = list(player_perspective.get_hand().cards)
 
-        # create an instance object of a SchnapsenTrickScorer Class, that allows us to get the rank of Cards.
+        # create an instance object of a SchnapsenTrickScorer Class,
+        # that allows us to get the rank of Cards.
         schnapsen_trick_scorer = SchnapsenTrickScorer()
         # we set the highest rank to something negative,
         # forcing it to change with the first comparison, since all scores are
@@ -70,6 +71,11 @@ class BullyBot(Bot):
                 highest_card_score = card_score
                 card_with_highest_score = card
 
+        # if our logic above was correct, this can never be None. We double check to make sure.
+        assert card_with_highest_score is not None
         move_of_card_with_highest_score = RegularMove(card_with_highest_score)
+
+        # We can double-check that this is a valid move like this.
+        assert move_of_card_with_highest_score in my_valid_moves
 
         return move_of_card_with_highest_score
