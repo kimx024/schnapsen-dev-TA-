@@ -153,10 +153,11 @@ def train_model() -> None:
     replay_memory_filename: str = 'random_random_10k_games.txt'
     # filename of replay memory within that directory
     replay_memories_directory: str = 'ML_replay_memories'
-    # Whether to train a complicated Neural Network model or a simple one.
-    # Tips: a neural network usually requires bigger datasets to be trained on, and to play with the parameters of the model.
-    # Feel free to play with the hyperparameters of the model in file 'ml_bot.py', function 'train_ML_model',
-    # under the code of body of the if statement 'if use_neural_network:'
+    # Whether to train a complicated Neural Network model or
+    # a simple one. Tips: a neural network usually requires
+    # bigger datasets to be trained on, and to play with the parameters of the model. Feel free to play with the
+    # hyperparameters of the model in file 'ml_bot.py', function 'train_ML_model', under the code of body of the if
+    # statement 'if use_neural_network:'
     replay_memory_location = pathlib.Path(replay_memories_directory) / replay_memory_filename
     model_name: str = 'simple_model'
     model_dir: str = "ML_models"

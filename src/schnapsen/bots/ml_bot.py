@@ -64,12 +64,16 @@ class MLPlayingBot(Bot):
 
 class MLDataBot(Bot):
     """
-    This class is defined to allow the creation of a training schnapsen bot dataset, that allows us to train a Machine Learning (ML) Bot
-    Practically, it helps us record how the game plays out according to a provided Bot behaviour; build what is called a "replay memory"
-    In more detail, we create one training sample for each decision the bot makes within a game, where a decision is an action selection for a specific game state.
+    This class is defined to allow the creation of a training schnapsen bot dataset,
+    that allows us to train a Machine Learning (ML) Bot
+    Practically, it helps us record how the game plays out according
+    to a provided Bot behaviour; build what is called a "replay memory"
+    In more detail, we create one training sample for each decision the bot makes within a game,
+    where a decision is an action selection for a specific game state.
     Then we relate each decision with the outcome of the game, i.e. whether this bot won or not.
     This way we can then train a bot according to the assumption that:
-        "decisions in earlier games that ended up in victories should be preferred over decisions that lead to lost games"
+    "decisions in earlier games that ended up in victories should be
+    preferred over decisions that lead to lost games"
     This class only records the decisions and game outcomes of the provided bot, according to its own perspective - incomplete game state knowledge.
     """
 
@@ -96,7 +100,8 @@ class MLDataBot(Bot):
         :param won: Did this bot win the game?
         :param state: The final state of the game.
         """
-        # we retrieve the game history while actually discarding the last useless history record (which is after the game has ended),
+        # we retrieve the game history while actually
+        # discarding the last useless history record (which is after the game has ended),
         # we know none of the Tricks can be None because that is only for the last record
         game_history: list[tuple[PlayerPerspective, Trick]] = cast(list[tuple[PlayerPerspective, Trick]], state.get_game_history()[:-1])
         # we also save the training label "won or lost"
@@ -112,7 +117,9 @@ class MLDataBot(Bot):
                 leader_move = round_trick.leader_move
                 follower_move = round_trick.follower_move
 
-            # we do not want this representation to include actions that followed. So if this agent was the leader, we ignore the followers move
+            # we do not want this representation to include
+            # actions that followed.
+            # So if this agent was the leader, we ignore the followers move
             if round_player_perspective.am_i_leader():
                 follower_move = None
 
@@ -132,8 +139,9 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
                    ) -> None:
     """
     Train the ML model for the MLPlayingBot based on replay memory stored byt the MLDataBot.
-    This implementation has the option to train a neural network model or a model based on linear regression.
-    The model classes used in this implemntation are not necesarily optimal.
+    This implementation has the option to
+    train a neural network model or a model based on linear regression.
+    The model classes used in this implementation are not necessarily optimal.
 
     :param replay_memory_location: Location of the games stored by MLDataBot, default pathlib.Path('ML_replay_memories') / 'test_replay_memory'
     :param model_location: Location where the model will be stored, default pathlib.Path("ML_models") / 'test_model'
@@ -153,13 +161,17 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
     # Check if model exists already
     if model_location.exists():
         raise ValueError(
-            f"Model at {model_location} exists already and overwrite is set to False. \nNo new model will be trained, process terminates")
+            f"Model at {model_location} exists already and overwrite is set to False. \nNo new model will be trained, "
+            f"process terminates")
 
     # check if directory exists, and if not, then create it
     model_location.parent.mkdir(parents=True, exist_ok=True)
 
     data: list[list[int]] = []
+    # list with features for each games
     targets: list[int] = []
+    # list with datasets if games is won (1) or lost (0)
+
     with open(file=replay_memory_location, mode="r") as replay_memory_file:
         for line in replay_memory_file:
             feature_string, won_label_str = line.split("||")
@@ -184,12 +196,15 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
         # Play around with the model parameters below
         print("Training a Complex (Neural Network) model.")
 
-        # Feel free to experiment with different number of neural layers or differnt type of neurons per layer
-        # Tips: more neurons or more layers of neurons create a more complicated model that takes more time to train and
-        # needs a bigger dataset, but if you find the correct combination of neurons and neural layers and provide a big enough training dataset can lead to better performance
+        # Feel free to experiment with different number of neural layers or
+        # different type of neurons per layer
+        # Tips: more neurons or more layers of neurons create a more complicated model
+        # that takes more time to train and needs a bigger dataset,
+        # but if you find the correct combination of neurons and
+        # neural layers and provide a big enough training dataset can lead to better performance
 
         # one layer of 30 neurons
-        hidden_layer_sizes = (30)
+        hidden_layer_sizes = 30
         # two layers of 30 and 5 neurons respectively
         # hidden_layer_sizes = (30, 5)
 
@@ -210,7 +225,8 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
         # https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression
         print("Training a Simple (Linear Logistic Regression model)")
 
-        # Usually there is no reason to change the hyperparameters of such a simple model but fill free to experiment:
+        # Usually there is no reason to change the hyperparameters
+        # of such a simple model but fill free to experiment:
         learner = LogisticRegression(max_iter=1000)
     else:
         raise AssertionError("Unknown model class")
@@ -218,6 +234,7 @@ def train_ML_model(replay_memory_location: Optional[pathlib.Path],
     start = time.time()
     print("Starting training phase...")
 
+    # training happening here
     model = learner.fit(data, targets)
     # Save the model in a file
     joblib.dump(model, model_location)
@@ -234,6 +251,7 @@ def create_state_and_actions_vector_representation(state: PlayerPerspective, lea
     player_game_state_representation = get_state_feature_vector(state)
     leader_move_representation = get_move_feature_vector(leader_move)
     follower_move_representation = get_move_feature_vector(follower_move)
+    # single move in the game
 
     return player_game_state_representation + leader_move_representation + follower_move_representation
 
@@ -295,10 +313,14 @@ def get_one_hot_encoding_of_card_rank(card_rank: Rank) -> List[int]:
 
 def get_move_feature_vector(move: Optional[Move]) -> List[int]:
     """
-        In case there isn't any move provided move to encode, we still need to create a "padding"-"meaningless" vector of the same size,
-        filled with 0s, since the ML models need to receive input of the same dimensionality always.
-        Otherwise, we create all the information of the move i) move type, ii) played card rank and iii) played card suit
-        translate this information into one-hot vectors respectively, and concatenate these vectors into one move feature representation vector
+        In case there isn't any move provided move to encode,
+        we still need to create a "padding"-"meaningless" vector of the same size,
+        filled with 0s, since the ML models need to receive input
+        of the same dimensionality always.
+        Otherwise, we create all the information of the move
+        i) move type, ii) played card rank and iii) played card suit
+        translate this information into one-hot vectors
+        respectively, and concatenate these vectors into one move feature representation vector
     """
 
     if move is None:

@@ -10,7 +10,6 @@ To use the platform, your python version must be at least 3.9, we suggest instal
 
 To get started, install the schnapsen package and itse dependencies in editable mode by running:
 
-
 ```sh
 pip install -e .
 ```
